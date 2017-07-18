@@ -1,0 +1,246 @@
+---
+title: "Example 2.2"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, error = TRUE)
+```
+
+```{r}
+library(rprojroot)
+root <- rprojroot::is_rstudio_project$make_fix_file()
+source(paste(root("R"), "startup.R", sep = "/"))
+pathTo <- loadPaths()
+```
+
+
+## Example 2.2
+We show how to perform _Principal Component Analysis_ (PCA) using the yeast cell cycle data set. Recall from Chapter 1 that these contain 384 genes corresponding to five phases, measured at 17 time points. We first load the data and center each row.
+
+
+## Scree Plot
+A graphical way of determining the number of PCs to retain is called the `scree` plot. The original name and idea is from Cattell [1966], and it is a plot of $l_k$ (the eigenvalue) versus $k$ (the index of the eigenvalue). In some cases, we might plot the log of the eigenvalues when the first eigenvalues are very large. This type of plot is called a `log-eigenvalue` or LEV plot. To use the scree plot, one looks for the ‘elbow’ in the curve or the place where the curve levels off and becomes almost flat. Another way to look at this is by the slopes of the lines connecting the points. When the slopes start to level off and become less steep, that is the number of PCs one should keep.￿
+
+Loading the Matlab software array:
+```{r message=FALSE}
+library(R.matlab)
+
+# read the Matlab array
+yeast.mat <- paste(pathTo$extdata, "yeast.mat", sep = "/")
+yeast.mat <- readMat(yeast.mat, fixNames = TRUE)
+```
+
+
+Names of the Matlab objects:
+```{r}
+names(yeast.mat)
+```
+
+Get the `data` part of the Matlab array file:
+```{r}
+data <- yeast.mat$data
+```
+
+Get the dimensions and assign. In Matlab this is one line command.
+```{r}
+n <- nrow(data)
+p <- ncol(data)
+n;p
+```
+
+### Replicate the `repmat` Matlab function
+
+> We will create athe function `m.repmat()`.
+
+```{r}
+matlab.R <- paste(pathTo$R, "matlab.R", sep = "/")
+source(matlab.R)
+r <- m.repmat(colSums(data)/n, n, 1)
+m.size(r)
+```
+
+The size of `r` should be 384x17. We need to find out why `r` is 6528x1.
+
+
+Simple matrix example:
+```{r}
+A <- matrix(c(1,2,3,4), ncol = 2, byrow = F)
+A
+r <- m.repmat(A, 2, 3)
+r
+```
+
+### `m.repmat()` not working with bigger matrices
+> `m.repmat` seems to be working for small matrices but doesn't work for the bigger matrix `data`. `colSums` returns a numeric vector. In Octave, `cs` is a 1x17 matrix.
+
+```{r}
+# column sums
+cs <- colSums(data) / n        # numeric vector, no matrix
+
+# convert to matrix 1x17, like in Matlab
+mcs <- matrix(cs, nrow = 1)
+dim(mcs)
+```
+
+```{r}
+# source("../R/matlab.R")
+
+# create a new matrix 384x17
+r <- m.repmat(mcs, n, 1)
+dim(r)
+```
+> Now, `r` has the right size. The problem was on: (1) Matlab's sum(data) give the sum of each vector in the matrix while R' sum() gives the total sum of all vectors; we have to use `colSums`. (2) The resulting matrix from `colSums(data)/n` had to be a 1x17 matrix. We achieve this indicating it with `nrow=` in matrix().
+
+
+### Center the data
+> The `colSums(data)` vector has to be converted first to a 1x17 matrix, otherwise the `m.repmat` custom function will give an incorrect matrix size.
+
+```{r}
+# source("../R/matlab.R")
+
+# column sums
+cs <- colSums(data) / n        # numeric vector, no matrix
+
+# convert to matrix 1x17, like in Matlab
+mcs <- matrix(cs, nrow = 1)
+datac <- data - m.repmat(mcs, n, 1)  # center the data
+dim(datac)
+```
+
+### Covariance
+We are going to use the covariance matrix in PCA since the variables have common units. The reader is asked to explore the correlation matrix approach in the exercises. The eig function is used to calculate the eigenvalues and eigenvectors. MATLAB returns the eigenvalues in a diagonal matrix, and they are in ascending order, so they must be flipped to get the scree plot.
+
+```{r}
+# source("../R/matlab.R")
+
+# find the covariance matrix_type
+covm <- cov(datac)
+```
+
+### Arrange matrices in descending order
+> We will use a custom built `m.eig` function.
+
+```{r fig.asp= 1}
+
+eig <- m.eig(covm)
+eigvec <- eig$vectors
+eigval <- eig$values
+
+eigvald <- matrix(diag(eigval))  # Extract the diagonal elements
+
+# Order in descending order
+eigvale <- m.flipud(eigvald)
+eigvece <- eigvec[, p:1]
+
+eigvald
+eigvale
+```
+
+### The Scree Plot
+```{r}
+# Build scree plot
+plot(1:length(eigvale), eigvale, 
+     type = "l", 
+     main = "Scree Plot",
+     xlab = "Eigenvalue Index",
+     ylab = "Eigenvalue")
+points(1:length(eigvale), eigvale)
+```
+
+We see from the scree plot in Figure 2.2 that keeping four PCs seems reasonable. Next we calculate the cumulative percentage of variance explained.
+
+The elbow in the curve seems to occur at $k$ = 4.
+
+Now for the percentage of variance explained:
+
+```{r}
+pervar = 100*apply(eigvale, 2, cumsum)/sum(eigvale)
+```
+
+Depending on the cutoff value, we would keep four to five PCs (if we are
+using the higher end of the range of $t_d$ ). Now we show how to do the broken
+stick test.￿
+
+```{r}
+# First get the expected sizes of the eigenvalues.
+g <- matrix(0, nrow= 1, ncol = p)
+
+for (k in 1:p) {
+  for (i in k:p) {
+    g[k] <- g[k] + 1 /i
+  }
+}
+g <- g / p
+  
+```
+
+The next step is to find the proportion of the variance explained.
+```{r}
+propvar <- eigvale / sum(eigvale)
+```
+
+Looking only at the first several values, we get the following for gk and the
+proportion of variance explained by each PC:
+
+```{r}
+g[1:4]
+propvar[1:4]
+```
+
+Thus, we see that only the first PC would be retained using this method.
+Finally, we look at the size of the variance.
+
+```{r}
+# Now for the size of the variance.
+avgeig = mean(eigvale);
+
+# Find the length of ind:
+ind <- which(eigvale > avgeig)
+length(ind)
+```
+
+According to this test, the first three PCs would be retained. So, we see that
+different values of $d$ are obtained using the various procedures. Because of
+visualization issues , we will use the first three PCs to reduce the dimensionality of the data, as follows.
+
+```{r}
+# So, using 3, we will reduce the dimensionality.
+P = eigvece[,1:3]
+Xp = datac %*% P
+```
+
+### Using the `lattice` package
+```{r}
+library(lattice)
+cloud(Xp[,1]~Xp[,2] * Xp[,3])
+```
+
+### Using the `plot3d` package
+```{r fig.asp=1}
+library("plot3D")
+
+scatter3D(Xp[,1], Xp[,2], Xp[,3],
+          col = "blue",
+          pch = 19,
+          cex = 0.5,
+          bty = "b2",
+          xlab = "PC1",
+          ylab = "PC2",
+          zlab = "PC3",
+          theta = 30,       # 3D viewing direction: azimuth
+          phi = 15,           # co-latitude
+          ticktype = "detailed"
+          )
+```
+
+We illustrated the use of the `eig` function that comes in the main MATLAB package. It contains another useful function called `eigs` that can be used to find the PCs and eigenvalues of sparse matrices. 
+
+For those who have the Statistics Toolbox, there is a function called `princomp`. It returns the PCs, the PC scores and other useful information for making inferences regarding the
+eigenvalues. It centers the observations at the means, but does not rescale (Statistics Toolbox, Version 5). For PCA using the covariance matrix, the `pcacov` function is provided.
+
+Before moving on to the next topic, we recall that the PCA described in this book is based on the sample covariance or sample correlation matrix. The procedure is similar if the population version of these matrices is used. Many interesting and useful properties are known about principal components and the associated data transformations, but are beyond the scope and purpose of this book. We provide references in the last section.

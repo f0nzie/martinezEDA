@@ -1,0 +1,50 @@
+---
+title: "02-4 Factor Analysis - Octave - NOT WORKING"
+output: html_notebook
+---
+
+Example 2.4
+In this example, we examine some data provided with the Statistics Toolbox, 
+called stockreturns. An alternative analysis of these data is provided in the 
+Statistics Toolbox User ’s Guide. The data set consists of 100 observations, 
+representing the percent change in stock prices for 10 companies. Thus, the data set has n = 100 observations and p = 10 variables. It turns out that the first four companies can be classified as technology, the next three as financial, and the last three as retail. We can use factor analysis to see if there is any structure in the data that supports this grouping. We first load up the data set and perform factor analysis using the function factoran.
+
+```{r}
+library(RcppOctave)
+.CallOctave("version")
+```
+
+
+```{r}
+loaded <- .O$load("stockreturns.mat")
+stocks <- loaded$stocks
+
+var <- .O$factoran(stocks, 3)
+```
+
+
+This example doesn't work because of problem with statistics package
+
+```{r}
+library(RcppOctave)
+.CallOctave("version")
+```
+
+```{r}
+f_stocks <- OctaveFunction("
+function [x] = stocks() 
+  pkg load statistics
+  load stockreturns
+  % Loads up a variable called stocks.
+  % Perform factor analysis:3 factors,default rotation.
+  [LamVrot,PsiVrot] = factoran(stocks,3);
+  x = 1;
+
+end
+                           ")
+```
+
+
+```{r}
+stocks <- f_stocks()
+```

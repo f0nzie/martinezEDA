@@ -1,0 +1,115 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+The following MATLAB code implements the `Pettis` algorithm for estimating
+intrinsic dimensionality, which is also contained in the EDA Toolbox function called `idpettis`. We first generate some data to illustrate the functionality of the algorithm. The helix is described by the following equations, and points are randomly chosen along this path:
+
+$$
+x = cos(\theta) \\
+y = sin(\theta) \\
+z = 0.1 \theta
+$$
+for $0<= \theta <= 4 \pi$.
+
+For this data set, the dimensionality is 3, but the intrinsic dimensionality is 1. We show a picture of the helix in Figure 2.6. We obtain the data by generating uniform random numbers in the interval￿$0<= \theta <= 4 \pi$.
+
+### Set up project folders with `rprojroot` package
+
+```{r results='hold'}
+# package rprojroot required
+library(rprojroot)
+
+root <- rprojroot::is_rstudio_project
+root_file <- root$make_fix_file()
+# root$find_file("REAME.md")
+root_file()
+cat("Setting up the project folders:\n")
+project.data <- root_file("data")
+project.extdata <- root_file("inst/extdata")
+project.R <- root_file("R")
+project.matlab <- root_file("inst/matlab")
+
+project.data
+project.extdata
+project.R
+project.matlab
+```
+
+```{r fig.asp=1}
+library("plot3D")
+
+# generate the random numbers
+# use random numbers from the uniform distribution
+n <- 500
+theta <- runif(n =  n, min = 0, max = 4*pi)
+
+
+# Use in the equations for a helix￿
+x <- cos(theta)
+y <- sin(theta)
+z <- 0.1 * (theta)
+
+# Put into a data matrix
+# X = [x(,),y(,),z(,)]
+X <- matrix(c(x, y, z), 500, 3)
+
+
+
+scatter3D(x, y, z,
+          col = "blue",
+          pch = 19,
+          cex = 0.5,
+          bty = "b2",
+          xlab = "x",
+          ylab = "y",
+          zlab = "z",
+          theta = -45,       # 3D viewing direction: azimuth
+          phi = 30,           # co-latitude
+          ticktype = "detailed"
+          )
+```
+
+
+
+```{r}
+# get the distance using Octave's pdist function
+# this returns the interpoint distances
+ydist <- .O$pdist(X)
+```
+
+## Load a matlab file in memory
+Source idpettis.m file.
+```{r}
+# clear all session
+o_clear(all = TRUE)
+o_ls()
+
+# source example file from RcppOctave installation
+mfile <- paste(project.matlab, "idpettis.m", sep = "/")
+mfile
+```
+
+> Optional. Do not need to run.
+ 
+In the interest of space and clarity, we show only the code for the algorithm after the outliers have been removed. 
+```{r}
+cat(readLines(mfile), sep = "\n")
+```
+
+## Load and run
+Loads idpettis and checks it loaded.
+```{r}
+o_source(mfile)
+o_ls()
+```
+
+Call idpettis() with arguments `ydist` and `n`:
+```{r}
+.O$idpettis(ydist, n)
+```
+
+he resulting estimate of the intrinsic dimensionality is 1.14. We see from this result, that in most cases the estimate will need to be rounded to the nearest integer. Thus, the estimate in this case is the correct one: 1-D.
+
+

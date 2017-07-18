@@ -1,0 +1,185 @@
+---
+title: "Example 2.3 - SVD"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_notebook: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, error = TRUE)
+```
+
+## 2.3 Singular Value Decomposition - SV D
+Singular value decomposition (SVD) is an important method from matrix algebra and is related to PCA. In fact, it provides a way to find the PCs without explicitly calculating the covariance matrix [Gentle, 2002]. It also enjoys widespread use in the analysis of gene expression data [Alter, Brown and Botstein, 2000; Wall, Dyck and Brettin, 2001; Wall, Rechtsteiner and
+Rocha, 2003] and in information retrieval applications [Deerwester, et al., 1990; Berry, Dumais and O’Brien, 1995; Berry, Drmac and Jessup, 1999], so it is an important technique its own right. 
+
+As before, we start with our data matrix $\mathbf X$, where in some cases, we will center the data about their mean to get $\mathbf X_c$. We use the noncentered form in the explanation that follows, but the technique is valid for an arbitrary matrix; i.e., the matrix does not have to be square. The SVD of X is given by:
+
+$$
+\begin{aligned}
+\mathbf X = \mathbf{UD} \mathbf V^T
+\end{aligned}
+$$
+
+where $\mathbf U$ is an $n \times n$ matrix, $\mathbf D$ is a diagonal matrix with n rows and p columns, and $\mathbf V$ has dimensions pxp. The columns of $\mathbf U$ and $\mathbf V$ are orthonormal. $\mathbf D$ is a matrix containing the singular values along its diagonal, which are the square roots of the eigenvalues of $\mathbf X \mathbf X^T$ and zeros everywhere else.
+
+To illustrate the SVD approach, we look at an example from information retrieval called ___latent semantic indexing___ or LSI [Deerwester, et al., 1990].
+Many applications of information retrieval (IR) rely on lexical matching, where words are matched between a user ’s query and those words assigned to documents in a corpus or database. However, the words people use to describe documents can be diverse and imprecise, so the results of the queries are often less than perfect. LSI uses SVD to derive vectors that are more
+robust at representing the meaning of words and documents.
+
+## Example
+The columns of $\mathbf U$ are called the _left singular vectors_ and are calculated as
+the eigenvectors of (this is an nxn matrix). Similarly, the columns of $\mathbf V$
+are called the _right singular vectors_, and these are the eigenvectors of 
+(this is a $p \times p$ matrix). An additional point of interest is that the singular
+values are the square roots of the eigenvalues of $\mathbf X^T \mathbf X$ and $\mathbf X \mathbf X^T$.￿
+
+
+
+This illustrative example of SVD applied to information retrieval (IR) is taken
+from Berry, Drmac and Jessup [1999]. The documents in the corpus comprise
+a small set of book titles, and a subset of words have been used in the
+analysis, where some have been replaced by their root words (e.g., bake and
+baking are both bake). The documents and terms are shown in Table 2.1. We
+start with a data matrix, where each row corresponds to a term, and each
+column corresponds to a document in the corpus. The elements of the term-
+document matrix X denote the number of times the word appears in the ￰document. In this application, we are not going to center the observations,
+but we do pre-process the matrix by normalizing each column such that the
+magnitude of the column is 1. This is done to ensure that relevance between
+the document and the query is not measured by the absolute count of the
+terms.1 The following MATLAB code starts the process:
+
+
+```{r message=FALSE}
+library(R.matlab)
+source("../R/matlab.R")
+
+# read the Matlab array
+lsiex.mat <- readMat("../data/lsiex.mat", fixNames = TRUE)
+names(lsiex.mat)
+```
+
+```{r}
+termdoc <- lsiex.mat$termdoc
+X <- lsiex.mat$X
+```
+
+
+```{r}
+# Loads up variables: X, termdoc, docs and words.
+# Convert the matrix to one that has columns 
+# with a magnitude of 1.
+
+n <- m.size(termdoc)[1]
+p <- m.size(termdoc)[2]
+
+no <- m.zeros(1, p)
+
+for (i in 1:p) {
+  no[,i] = norm(matrix(X[, i]), 'f')   # Frobenius norm
+  termdoc[, i] <- X[, i] / no[,i]
+}
+no
+```
+
+```{r}
+X
+termdoc
+```
+
+
+Say we want to find books about baking bread, then the vector that represents this query is given by a column vector with a 1 in the first and fourth positions:
+
+> A matrix in Matlab `[1 0 1 0 0 0 ]` has to have the form of 1xn.
+
+```{r}
+
+q1 <- t(matrix(c(1, 0, 1, 0, 0, 0), nrow=1))
+dim(q1)
+```
+
+If we are seeking books that pertain only to baking, then the query vector is:
+
+```{r}
+q2 <- t(matrix(c(1, 0, 0, 0, 0, 0), nrow=1))
+dim(q2)
+```
+
+
+```{r}
+# Find the cosine of the angle between 
+# columns of termdoc and query.
+# Note that the magnitude of q1 is not 1.
+m1 <- norm(q1, 'f')
+cosq1a <- t(q1) %*% termdoc / m1
+# Note that the magnitude of q2 is 1.
+cosq2a = t(q2) %*% termdoc
+```
+
+The resulting cosine values are:
+```{r}
+cosq1a
+cosq2a
+```
+
+If we use a cutoff value of 0.5, then the relevant books for our first query are the first and the fourth ones, which are those that describe baking bread. On the other hand, the second query matches with the first book, but misses the
+fourth one, which would be relevant. Researchers in the area of IR have applied several techniques to alleviate this problem, one of which is LSI. One of the powerful uses of LSI is in matching a user ’s query with existing documents in the corpus whose representations have been reduced to lower rank approximations via the SVD. The idea being that some of the dimensions represented by the full term-document matrix are noise and that documents will have closer semantic structure after dimensionality reduction using SVD. So, we now find the singular value decomposition using the function __svd__.
+
+> Let's use svd() from R:
+
+```{r}
+svd(termdoc)
+```
+
+> If we compare the results svd() from R and from Matlab we will notice two differences: in the diagonal and the vectors. We have created a custom function `m.svd` to behave as in Matlab:
+
+
+```{r}
+source("../R/matlab.R")
+
+svd_all <- m.svd(termdoc)
+
+u <- svd_all$u
+d <- svd_all$d
+v <- svd_all$v
+
+# Project the query vectors.
+
+q1t <- t(u[, 1:3]) %*% q1
+q2t <- t(u[, 1:3]) %*% q2
+
+# Now find the cosine of the angle between the query 
+# vector and the columns of the reduced rank matrix,
+# scaled by D.
+
+cosq1b = matrix()
+cosq2b = matrix()
+
+for (i in 1:5) {
+  tv <- matrix(t(v[i, 1:3]), ncol=1)
+  sj <- d[1:3, 1:3] %*% tv
+  m3 <- norm(sj, 'f')
+  cosq1b[i] <- t(sj) %*% q1t / (m3 * m1)
+  cosq2b[i] <- t(sj) %*% q2t / (m3)
+}
+
+```
+
+From this we have:
+```{r}
+cosq1b
+cosq2b
+```
+
+
+Using a cutoff value of 0.5, we now correctly have documents 1 and 4 as being relevant to our queries on _baking bread_ and _baking_.
+
+Note that in the above loop, we are using the magnitudes of the original query vectors as in Berry, Drmac and Jessup [Equation 6.1, 1999]. This saves on computations and also impro ves precision (disregarding irrelevant information). We could divide by the magnitudes of the reduced query vectors (`q1t` and `q2t`) in the loop to improve recall (retrieving relevant information) at the expense of precision.
+
+Before going on to the next topic, we point out that the literature describing SVD applied t o LSI and gene express ion data d efines the matrices of Equation 2.5 in a different way. The decomposition is the same, but the difference is in the size of the matrices __U__ and __D__. Some definitions have the
+dimensions of __U__ as $n \times p$ and __D__ with dimensions $p \times p$ [Golub & Van Loan, 1996]. We follow the definition in Strang [1988, 1993], which is also used in MATLAB.
+
+
+
+

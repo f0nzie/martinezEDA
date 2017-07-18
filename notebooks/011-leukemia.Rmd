@@ -1,0 +1,85 @@
+---
+title: "leukemia"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, error = TRUE)
+```
+
+leukemia data set gene expressions of human acute leukemia. 
+prediction of the type of leukemia using supervised learning
+discovery of new classes of leukemia via unsupervised learning
+
+leukemia two groups: (1) acute lymphoblastic leukemia (ALL), 
+(2) acute myeloid leukemia (AML). 
+
+initial data set had 38 bone marrow samples: 
+27 came from patients with ALL, and 11 patients had AML.
+
+50 genes that have the highest correlation with the class of leukemia. 
+
+
+The leukemia.mat file has four variables. 
+> In Matlab, the variables are not columns; they are objects of a Matlab array. In this case `leukemia` is a matrix of doubles of 50x72. 
+
+The variable leukemia has 50 genes (rows) and 72 patients (columns). The first 38 columns correspond to the initial training set of patients, and the rest of the columns contain data for the independent testing set. 
+
+The objects `btcell` and `cancertype` are cell arrays of strings containing the label for B-cell, T-cell, or NA and ALL or AML, respectively. 
+
+Finally, the object `geneinfo` is a cell array where the first column provides the gene description, and the second column contains the gene number.
+
+
+Load the Matlab array leukemia.mat:
+
+```{r}
+library(R.matlab)
+
+leukemia.mat <- readMat("../extdata/leukemia.mat", fixNames = TRUE)
+class(leukemia.mat)
+```
+
+```{r}
+names(leukemia.mat)
+```
+
+
+Load only the data from leukemia.mat:
+```{r}
+leukemia <- leukemia.mat$leukemia
+```
+
+
+Standardize each gene to get the mean accross each row equal to 0 and the standard deviation is 1.
+
+```{r, fig.asp=1}
+x <- leukemia[, 1:38]   #: take only the first 38 columns
+
+n <- nrow(x)      # number of rows
+p <- ncol(x)      # number of columns
+
+y <- matrix(0, n, p)
+
+for (i in 1:n) {
+  sig <- sd(x[i, ])
+  mu <- mean(x[i, ])
+  y[i, ] <- (x[i, ] - mu) / sig
+}
+
+```
+
+```{r, fig.asp=1}
+image(y, 
+      col = grey(seq(0, 1, length = 256)), 
+      main = 'Gene Expression for Leukemia',
+      xlab = "ALL (1-27) or AML (28-38)",
+      ylab = "Gene"
+      )
+```
+
+Each row corresponds to a gene, and each column corresponds to a cancer sample.
+
+the ALL leukemia is highly expressed in the first set of 25 genes, and the AML leukemia is highly expressed in the second set of 25 genes.
+

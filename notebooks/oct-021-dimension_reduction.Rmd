@@ -1,0 +1,95 @@
+---
+title: "02-1 Dimension Reduction - Octave"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE,
+                      autodep = TRUE,
+                      cache.comments = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      error = TRUE,
+                      comment = NA)
+```
+
+```{r}
+library(RcppOctave)
+.CallOctave("version")
+```
+
+
+```{r}
+fXPXpx <- OctaveFunction("
+function [X, P, Xpx] = projectThis()
+  % Enter the data as rows of our matrix X.
+  X = [4 3; -4 5];
+
+  % Get theta.
+  theta = pi/3;
+
+  % Now obtain the projection matrix.
+  c2 = cos(theta)^2;
+  cs = cos(theta)*sin(theta);
+  s2 = sin(theta)^2;
+  P = [c2 cs; cs s2];
+
+  % Now project the data onto the theta-line.
+  % Since the data are arranged as rows in the
+  % matrix X, we have to use the following to
+  % project the data.
+  Xp = X*P;
+  %% plot(Xp(:,1),Xp(:,2),'o') % Plot the data.
+  % We can project onto the 1-D space given by the 
+  % horizontal axis using the projection:
+  Px = [1; 0];
+  Xpx = X*Px;
+end")
+```
+
+
+```{r}
+XXpx<- fXPXpx()
+X <- XXpx$X
+P <- XXpx$P
+Xpx <- XXpx$Xpx
+
+X
+P
+Xpx
+```
+
+Plotting in R.
+Orthogonal projection pending.
+```{r fig.asp=1}
+
+
+plot(X[, 1], X[, 2], 
+     xlim = c(-8, 8),
+     ylim = c(-8, 8),
+     pch = 22,
+     cex = 1.55
+     )
+
+abline(h=0, v=0)             # lines at (0, 0)
+points(Xpx[1], 0, pch=11)    # plot point projections on x-axis
+points(Xpx[2], 0, pch=11)    # plot point projections on x-axis
+
+
+fit <- lm(P[,2]~P[,1])
+abline(fit, col="green")
+```
+
+
+

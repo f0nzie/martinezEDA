@@ -1,0 +1,135 @@
+---
+title: "Example 2.4 - Factor Analysis"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, error = TRUE)
+```
+
+Source code: http://apt.kde-redhat.org/fedora/SOURCES/matlab/matlab/toolbox/stats/
+
+In this example, we examine some data provided with the Statistics Toolbox, called `stockreturns`. An alternative analysis of these data is provided in the Statistics Toolbox User ’s Guide. The data set consists of 100 observations, representing the percent change in stock prices for 10 companies. Thus, the data set has n = 100 observations and p = 10 variables. It turns out that the first four companies can be classified as technology, the next three as financial, and the last three as retail. 
+
+We can use factor analysis to see if there is any structure in the data that supports this grouping. We first load up the data set and perform _factor analysis_ using the function `factoran`.
+
+
+
+```{r message=FALSE}
+library(R.matlab)
+library(Hmisc)
+library(R.matlab)
+
+source("../R/matlab.R")
+
+# read the Matlab array
+stockreturns.mat <- readMat("../data/stockreturns.mat", fixNames = TRUE)
+names(stockreturns.mat)
+```
+
+```{r}
+stocks <- stockreturns.mat$stocks
+head(stocks)
+```
+
+## Varimax rotation
+We specify the number of factors (3 in this case), and the default is to use the `varimax` rotation, which optimizes a criterion based on the variance of the loadings:
+
+```{r fig.asp=1}
+title = "Varimax rotation"
+
+fac.anal <- factanal(stocks, factors = 3, rotation = "varimax")
+
+Lam <- fac.anal$loadings
+
+plot(Lam[,1], Lam[, 2], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 2], labels = 1:10, cex = 0.7, pos = 3)
+```
+
+```{r fig.asp=1}
+plot(Lam[,1], Lam[, 3], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 3], labels = 1:10, cex = 0.7, pos=3)
+```
+## No rotation
+Next, we specify `no rotation`, and we plot the matrix Lam (the factor loadings). This is the original Matlab code:
+
+```
+% Plot 1st factor loadings vs. 2nd factor loadings
+plot(Lam(:,1),Lam(:,2),'k.')
+text(Lam(:,1),Lam(:,2), num2str((1:10)')); 
+line([-1 1],[0 0],'Color','k');
+line([0 0],[-1 1],'Color','k');
+xlabel('Factor 1'); ylabel('Factor 2')
+title('No rotation')
+```
+
+```{r fig.asp=1}
+title = "No rotation"
+
+lam.psi <- factanal(stocks, factors = 3)
+
+Lam <- fac.anal$loadings
+
+plot(Lam[,1], Lam[, 2], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 2], labels = 1:10, cex = 0.7, pos = 3)
+```
+```{r fig.asp=1}
+plot(Lam[,1], Lam[, 3], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 3], labels = 1:10, cex = 0.7, pos=3)
+```
+
+These show the factor loadings in their unrotated form. We see that the loadings are notgrouped around the factor axes, although it is interesting to note that we have the three financial companies (points 5, 6, & 7) grouped together in the upper plot (factors 1 and 2),  while the three retail companies (points 8, 9, & 10) are grouped together in the lower plot  (factors 1 and 3).
+
+These plots show the pairwise factor loadings, and we can see that the factor loadings are not close to one of the factor axes, making it more difficult to interpret the factors.
+
+
+## Promax rotation
+We can try rotating the matrix next using one of the oblique (nonorthogonal) rotations called `promax`, and we plot these results:
+
+```{r fig.asp=1}
+title = "Promax rotation"
+
+lam.psi <- factanal(stocks, factors = 3, rotation = "promax")
+
+Lam <- fac.anal$loadings
+
+plot(Lam[,1], Lam[, 2], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 2], labels = 1:10, cex = 0.7, pos = 3)
+
+```
+
+```{r fig.asp=1}
+plot(Lam[,1], Lam[, 3], xlim = c(-1,1), ylim=c(-1,1), main = title)
+abline(h=0, v=0)
+text(Lam[, 1], Lam[, 3], labels = 1:10, cex = 0.7, pos=3)
+```
+
+These plots show the factor loadings after the `promax` rotation. We see that the stocks can be grouped as technology companies {1, 2, 3, 4}, financial {5, 6, 7}, and retail {8, 9, 10}. The rotation makes the factors somewhat easier to interpret.
+
+## Conclusions
+It can be very confusing trying to decide whether to use PCA or factor analysis. Since the objective of this book is to describe exploratory data analysis techniques, we suggest that both methods be used to explore the data, because they take different approaches to the problem and can uncover different facets of the data. We now outline the differences between PCA and factor analysis; a discussion of which method to use can be found in Velicer and Jackson [1990].
+
+* Both factor analysis and PCA try to represent the structure of the data set based on the covariance or correlation matrix. Factor analysis tries to explain the off-diagonal elements, while PCA explains the variance or diagonal elements of the matrix.
+
+* Factor analysis is typically performed using the correlation matrix, and PCA can be used with either the correlation or the covariance matrix.
+
+* Factor analysis has a model, as given in Equation 2.8 and 2.9, but PCA does not have an explicit model associated with it (unless one is interested in inferential methods associated with the eigenvalues and PCs, in which case, distributional assumptions are made).
+
+* If one changes the number of PCs to keep, then the existing PCs do not change. If we change the number of factors, then the entire solution changes; i.e., existing factors must be re-estimated.
+
+* PCA has a unique solution, but factor analysis does not. 
+
+* The PC scores are found in an exact manner, but the factor scores are estimates.
+
+
+
+

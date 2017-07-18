@@ -1,0 +1,110 @@
+---
+title: "02-3 Singular Value Decomposition - Octave"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE,
+                      autodep = TRUE,
+                      cache.comments = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      error = TRUE,
+                      comment = NA)
+```
+
+```{r}
+library(RcppOctave)
+.CallOctave("version")
+```
+
+This calls `lsiex` package in Matlab.
+```{r}
+f_lsiex <- OctaveFunction("
+function [u, v, d, cosq1a, cosq2a, cosq1b, cosq2b] = lsiex()
+  load lsiex
+  % Loads up variables: X, termdoc, docs and words.
+  % Convert the matrix to one that has columns 
+  % with a magnitude of 1.
+  [n,p] = size(termdoc);
+  for i = 1:p
+   termdoc(:,i) = X(:,i)/norm(X(:,i));
+  end
+
+  q1 = [1 0 1 0 0 0]';
+  q2 = [1 0 0 0 0 0]';
+  
+  % Find the cosine of the angle between 
+  % columns of termdoc and query.
+  % Note that the magnitude of q1 is not 1.
+  m1 = norm(q1);
+  cosq1a = q1'*termdoc/m1;
+  % Note that the magnitude of q2 is 1.
+  cosq2a = q2'*termdoc;
+
+  % Find the singular value decomposition.
+  [u,d,v] = svd(termdoc);
+
+  % Project the query vectors.
+  q1t = u(:,1:3)'*q1;
+  q2t = u(:,1:3)'*q2;
+  % Now find the cosine of the angle between the query 
+  % vector and the columns of the reduced rank matrix,
+  % scaled by D.
+  for i = 1:5
+   sj = d(1:3,1:3)*v(i,1:3)';
+   m3 = norm(sj);
+   cosq1b(i) = sj'*q1t/(m3*m1);
+   cosq2b(i) = sj'*q2t/(m3);
+  end
+
+end                         ")
+
+```
+
+
+```{r}
+lsiex <- f_lsiex()
+
+u <- lsiex$u
+v <- lsiex$v
+d <- lsiex$d
+
+cosq1a <- lsiex$cosq1a
+cosq2a <- lsiex$cosq2a
+
+cosq1b <- lsiex$cosq1b
+cosq2b <- lsiex$cosq2b
+
+u; v; d
+```
+
+```{r}
+plot(u, col = "blue")
+points(v, col = "red")
+points(d, col = "black")
+```
+
+```{r}
+cosq1a
+cosq2a
+plot(cosq1a, cosq2a)
+```
+
+```{r}
+cosq1b
+cosq2b
+plot(cosq1b, cosq2b)
+```
+

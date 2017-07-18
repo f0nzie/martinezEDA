@@ -1,0 +1,71 @@
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE,
+                      autodep = TRUE,
+                      cache.comments = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      error = TRUE,
+                      comment = NA)
+```
+
+Ensure that RcppOctave is installed and loaded.
+```{r}
+library(RcppOctave)
+.CallOctave("version")
+```
+
+
+```{r}
+fY <- OctaveFunction("
+function [Y] = stdLeukemia()
+
+  % First standardize the data such that each row 
+  % has mean 0 and standard deviation 1.
+
+  load leukemia
+  x = leukemia(:,1:38);
+  [n,p] = size(x);
+  y = zeros(n,p);
+  for i = 1:n
+    sig = std(x(i,:));
+    mu = mean(x(i,:));
+    y(i,:)= (x(i,:)-mu)/sig;
+  end
+  % Now do the image of the data.
+  %% pcolor(y)
+  %% colormap(gray(256))
+  %% colorbar
+  %% title('Gene Expression for Leukemia')
+  %% xlabel('ALL (1-27) or AML (28-38)')
+  %% ylabel('Gene')
+  Y = y;
+end")
+```
+
+Image plot in R.
+```{r, fig.asp=1}
+Y <- fY()
+
+image(Y, 
+      col = grey(seq(0, 1, length = 256)), 
+      main = 'Gene Expression for Leukemia',
+      xlab = "ALL (1-27) or AML (28-38)",
+      ylab = "Gene"
+      )
+```

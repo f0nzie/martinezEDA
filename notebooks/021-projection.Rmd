@@ -1,0 +1,95 @@
+---
+title: "Dimension reduction. Projection. Example 2.1"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, error=TRUE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, error = TRUE)
+```
+
+# Objective
+In this example we want to show the dimension reduction of the data. We start with a 2-D data set and will reduce it to a 1-D data set by projecting the x,y coordinates of the data set over the x-axis.
+
+
+We will be projecting our data set onto a line that is $\theta$ radians from the horizontal.
+
+$\theta$ in the example is $\frac{\pi}{3}$.
+
+The projection matrix is given by:
+
+$p = \begin{pmatrix}
+(cos \theta)^2 & cos \theta sin \theta \\ 
+ cos \theta sin \theta & (sin \theta)^2
+ \end{pmatrix}$
+ 
+
+We start with a small data sample: 
+```{r}
+# enter data as rows
+X = matrix(c(4, 3, -4, 5), nrow=2, byrow = TRUE)
+X
+```
+
+The projection angle will be pi/3 in radians:
+```{r}
+# get theta
+theta <- pi /3
+```
+
+
+We calculate the projection matrix:
+```{r}
+# obtain the projection matrix
+c2 <- cos(theta)^2
+cs <- cos(theta)*sin(theta)
+s2 <- sin(theta)^2
+P <- array(c(c2, cs, cs, s2), dim = c(2,2))
+cat("Projection matrix at angle:\n")
+P
+```
+
+
+
+```{r}
+source("../R/matlab.R")
+
+Xp <- X %*% P
+Xp
+
+Px <- matrix(c(1, 0), nrow=2)
+Xpx <- X %*% Px
+
+cat("Ortogonal projection:\n")
+Px
+cat("Projection over the x-axis\n")
+Xpx
+```
+
+
+Then, we plot the projection points over the x-axis from the line at angle $\theta$:
+
+```{r, fig.asp=0.9}
+
+plot(X[, 1], X[, 2], 
+     xlim = c(-8, 8),
+     ylim = c(-8, 8),
+     pch = 20,
+     cex = 1.55
+     )
+
+projectionMatrixLine(P, col = 'green')   # draw the projection line at angle
+
+abline(h=0, v=0)             # lines at (0, 0)
+points(Xpx[1], 0, pch=11)    # plot point projections on x-axis
+points(Xpx[2], 0, pch=11)    # plot point projections on x-axis
+```
+
+We can see now the ortogonal projections on the x-axis.
+
+```{r}
+X
+```
+
