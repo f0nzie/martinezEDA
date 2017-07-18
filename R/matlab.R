@@ -9,13 +9,13 @@ mlab_eig <- function(M) {
   eigen_values_mlab <- rev(eigen_values)   # reverse the eigen values as in Matlab
   D <- diag(eigen_values_mlab)
   # DD <- diag((diag(D))^(-1/2))
-  
+
   return(list(V = VV, D = D))
 }
 
 m.eig <- function(M) {
   # replicate the Matlab eig() function
-  # Returns: 
+  # Returns:
   #       the diagonal of eigen$values
   #       the negative of eigen$vectors in descending order
   eig <- eigen(M)
@@ -28,8 +28,8 @@ m.eig <- function(M) {
 
 "%^%" <- function(x, n)
   # create a special operator for raising matrix to a `n` power
-  with(eigen(x), 
-       vectors %*% 
+  with(eigen(x),
+       vectors %*%
          (values^n * t(vectors))
   )
 
@@ -37,8 +37,8 @@ m.eig <- function(M) {
 
 segmentInf <- function(xs, ys, ...){
   # draw infinite line given two point coordinates
-  fit <- lm(ys~xs)
-  abline(fit, ...)
+  fit <- stats::lm(ys~xs)
+  graphics::abline(fit, ...)
 }
 
 
@@ -47,7 +47,12 @@ projectionMatrixLine <- function(M, ...) {
   segmentInf(M[,1], M[,2], ...)
 }
 
-
+#' Replicates the repmat function in Matlab
+#'
+#' @param M a matrix
+#' @param n number of rows
+#' @param m number of columns
+#' @export
 m.repmat <- function(M, n, m) {
   # replicates the repmat function in Octave
   # M should be a matrix
@@ -64,12 +69,21 @@ m.flipud <- function(M) {
   apply(M, 2, rev)
 }
 
-m.zeros <-function(m,n) {
+
+#' Replicate the Matlab zeros function
+#' @param m number of rows
+#' @param n number of columns
+#' @export
+m.zeros <-function(m, n) {
   # replicate the Matlab zeros function
   matrix(0,nrow=m,ncol=n)
 }
 
 
+#' Replicate Matlab function svd including the diag(d)
+#'
+#' @param M a matrix
+#' @export
 m.svd <- function(M) {
   # replicate Matlab function svd including the diag(d) which is not
   # included in R svd()
