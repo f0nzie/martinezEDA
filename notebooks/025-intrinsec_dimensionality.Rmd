@@ -55,8 +55,7 @@ z <- 0.1 * (theta)
 # X = [x(,),y(,),z(,)]
 X <- matrix(c(x, y, z), 500, 3)
 
-
-
+# plot it
 scatter3D(x, y, z,
           col = "blue",
           pch = 19,

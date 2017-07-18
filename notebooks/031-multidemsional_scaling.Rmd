@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r message=FALSE}
+library(R.matlab)
+source("../R/matlab.R")
+
+# read the Matlab array
+matchbpm.mat <- readMat("../inst/extdata/matchbpm.mat", fixNames = TRUE)
+names(matchbpm.mat)
+```
+
+
+
+
+```{r}
+matchbpm <- matchbpm.mat$matchbpm
+classlab <- matchbpm.mat$classlab
+
+# what's the size of the data
+dim(matchbpm)
+dim(classlab)
+
+```
+
+
+
+```{r}
+# get the data for topis 9 and 6
+# Find the indices where they are not equal to 6 or 9.
+
+# indlab <- find(classlab == 6)
+indlab <- which(classlab[, 1] != 6 & classlab[, 1] != 9)
+
+```
+
+```{r}
+
+# get rid of these 
+matchbpm <- matchbpm[-indlab, ]
+classlab <- classlab[-indlab, ]
+
+dim(matchbpm)
+dim(classlab)
+```
+
+```{r}
+
+```
+
+
