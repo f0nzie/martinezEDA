@@ -37,7 +37,7 @@ Load the Matlab array leukemia.mat:
 ```{r}
 library(R.matlab)
 
-leukemia.mat <- readMat("../extdata/leukemia.mat", fixNames = TRUE)
+leukemia.mat <- readMat("../inst/extdata/leukemia.mat", fixNames = TRUE)
 class(leukemia.mat)
 ```
 

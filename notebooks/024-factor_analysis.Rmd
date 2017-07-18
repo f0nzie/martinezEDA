@@ -27,7 +27,7 @@ library(R.matlab)
 source("../R/matlab.R")
 
 # read the Matlab array
-stockreturns.mat <- readMat("../data/stockreturns.mat", fixNames = TRUE)
+stockreturns.mat <- readMat("../inst/extdata/stockreturns.mat", fixNames = TRUE)
 names(stockreturns.mat)
 ```
 

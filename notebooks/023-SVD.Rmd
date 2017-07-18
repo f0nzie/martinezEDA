@@ -56,7 +56,7 @@ library(R.matlab)
 source("../R/matlab.R")
 
 # read the Matlab array
-lsiex.mat <- readMat("../data/lsiex.mat", fixNames = TRUE)
+lsiex.mat <- readMat("../inst/extdata/lsiex.mat", fixNames = TRUE)
 names(lsiex.mat)
 ```
 
